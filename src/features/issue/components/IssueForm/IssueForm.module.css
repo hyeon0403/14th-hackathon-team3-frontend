@@ -27,6 +27,8 @@
 ================================================== */
 
 .pageHeader {
+  position: relative;
+
   width: 690px;
 
   margin-bottom: 39px;
@@ -35,6 +37,16 @@
 
 .editPageHeader {
   margin-bottom: 30px;
+}
+
+
+/* 뒤로가기 */
+
+.backButtonWrap {
+  position: absolute;
+
+  left: -13px;
+  top: -32px;
 }
 
 
@@ -78,7 +90,7 @@
 }
 
 
-/* 편집 페이지 상단 '이슈' */
+/* 편집 페이지 상단 이슈 */
 
 .pageLabel {
   display: block;
@@ -96,7 +108,7 @@
 }
 
 
-/* 편집 페이지 Cycle 3 */
+/* 편집 페이지 Cycle */
 
 .editCycleBadge {
   width: 64.02px;
@@ -309,8 +321,6 @@
 }
 
 
-/* 미선택 */
-
 .customRadio {
   position: relative;
 
@@ -327,8 +337,6 @@
   background: #d1d3d8;
 }
 
-
-/* 일반 선택 */
 
 .priorityOption input:checked + .customRadio {
   border-color: #3957ff;
@@ -355,8 +363,6 @@
   background: #3957ff;
 }
 
-
-/* 긴급 */
 
 .urgentOption {
   grid-column: 1;
@@ -572,12 +578,31 @@
 }
 
 
-.conditionText {
+.conditionInput {
+  width: calc(100% - 30px);
+  height: 100%;
+
+  box-sizing: border-box;
+
+  padding: 0;
+
+  border: none;
+  outline: none;
+
+  background: transparent;
+
   color: rgba(255, 255, 255, 0.9);
+
+  font-family: Pretendard, sans-serif;
 
   font-size: 12px;
   font-weight: 400;
   line-height: 110%;
+}
+
+
+.conditionInput::placeholder {
+  color: rgba(255, 255, 255, 0.3);
 }
 
 
@@ -588,6 +613,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+
+  flex-shrink: 0;
 
   padding: 0;
 
@@ -621,6 +648,8 @@
   height: 254px;
 
   padding: 23px 16px;
+
+  overflow: visible;
 }
 
 
@@ -639,11 +668,15 @@
 
 
 .managerField {
+  position: relative;
+
   width: 293px;
 }
 
 
 .dateColumn {
+  position: relative;
+
   width: 260px;
 }
 
@@ -680,8 +713,205 @@
 
 
 /* ==================================================
+   담당자 실제 멤버 선택
+================================================== */
+
+.assigneeDropdown {
+  position: relative;
+
+  width: 293px;
+
+  z-index: 300;
+}
+
+
+.assigneeDropdown > input {
+  width: 293px;
+  height: 39px;
+
+  box-sizing: border-box;
+
+  padding: 0 40px 0 13px;
+
+  border: 1px solid rgba(166, 180, 255, 0.08);
+  border-radius: 8px;
+
+  outline: none;
+
+  background: #1b2038;
+
+  color: #ffffff;
+
+  font-family: Pretendard, sans-serif;
+
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 110%;
+}
+
+
+.assigneeDropdown > input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+
+.assigneeSelectedMark {
+  position: absolute;
+
+  top: 50%;
+  right: 14px;
+
+  transform: translateY(-50%);
+
+  color: #4d67ff;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  pointer-events: none;
+}
+
+
+.assigneeMenu {
+  position: absolute;
+
+  top: 45px;
+  left: 0;
+
+  width: 293px;
+  max-height: 180px;
+
+  box-sizing: border-box;
+
+  padding: 5px 0;
+
+  border-radius: 8px;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 4px 12px
+    rgba(0, 0, 0, 0.18);
+
+  overflow-y: auto;
+
+  z-index: 500;
+}
+
+
+.assigneeOption {
+  width: 100%;
+  min-height: 44px;
+
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 10px;
+
+  padding: 7px 12px;
+
+  border: none;
+
+  background: transparent;
+
+  font-family: Pretendard, sans-serif;
+
+  text-align: left;
+
+  cursor: pointer;
+}
+
+
+.assigneeOption:hover {
+  background: rgba(57, 87, 255, 0.08);
+}
+
+
+.assigneeOptionText {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 4px;
+}
+
+
+.assigneeOptionText strong {
+  color: #15192f;
+
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 110%;
+
+  white-space: nowrap;
+}
+
+
+.assigneeOptionText span {
+  max-width: 190px;
+
+  color: rgba(21, 25, 47, 0.55);
+
+  font-size: 9px;
+  font-weight: 400;
+  line-height: 110%;
+
+  white-space: nowrap;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+.assigneeRole {
+  flex-shrink: 0;
+
+  color: rgba(21, 25, 47, 0.55);
+
+  font-size: 9px;
+  font-weight: 400;
+  line-height: 110%;
+
+  white-space: nowrap;
+}
+
+
+.assigneeEmpty {
+  height: 39px;
+
+  display: flex;
+  align-items: center;
+
+  box-sizing: border-box;
+
+  padding: 0 12px;
+
+  color: rgba(21, 25, 47, 0.5);
+
+  font-family: Pretendard, sans-serif;
+
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 110%;
+}
+
+
+/* ==================================================
    처리 일자
 ================================================== */
+
+.dateWrapper {
+  position: relative;
+
+  width: 260px;
+
+  z-index: 200;
+}
+
 
 .dateField {
   width: 260px;
@@ -712,15 +942,215 @@
 }
 
 
-.dateField img {
+.calendarButton {
+  width: 24px;
+  height: 24px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  padding: 0;
+
+  border: none;
+
+  background: transparent;
+
+  cursor: pointer;
+}
+
+
+.calendarButton img {
   display: block;
 
   width: 24px;
   height: 24px;
 
-  flex-shrink: 0;
-
   object-fit: contain;
+}
+
+
+/* ==================================================
+   커스텀 달력
+================================================== */
+
+.calendarPopup {
+  position: absolute;
+
+  top: 48px;
+  right: 0;
+
+  width: 320px;
+
+  box-sizing: border-box;
+
+  padding: 20px 20px 22px;
+
+  border-radius: 8px;
+
+  background: #ffffff;
+
+  color: #111111;
+
+  box-shadow:
+    0 8px 24px
+    rgba(0, 0, 0, 0.18);
+
+  z-index: 500;
+}
+
+
+.calendarHeader {
+  height: 38px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+
+.calendarMonthTitle {
+  color: #828282;
+
+  font-family: Pretendard, sans-serif;
+
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 110%;
+
+  white-space: nowrap;
+}
+
+
+.calendarArrow {
+  width: 28px;
+  height: 28px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border: none;
+
+  background: transparent;
+
+  color: #111111;
+
+  font-family: Arial, sans-serif;
+
+  font-size: 35px;
+  font-weight: 300;
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+
+.calendarDivider {
+  width: 100%;
+  height: 1px;
+
+  margin-top: 8px;
+  margin-bottom: 13px;
+
+  background: #b9b9b9;
+}
+
+
+.weekHeader {
+  display: grid;
+
+  grid-template-columns: repeat(7, 1fr);
+
+  margin-bottom: 9px;
+}
+
+
+.weekHeader span {
+  height: 28px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #111111;
+
+  font-family: Pretendard, sans-serif;
+
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 110%;
+}
+
+
+.calendarGrid {
+  display: grid;
+
+  grid-template-columns: repeat(7, 1fr);
+
+  row-gap: 4px;
+}
+
+
+.calendarDate {
+  width: 36px;
+  height: 36px;
+
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  justify-self: center;
+
+  padding: 0;
+
+  border: none;
+  border-radius: 50%;
+
+  background: transparent;
+
+  color: #111111;
+
+  font-family: Pretendard, sans-serif;
+
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 110%;
+
+  cursor: pointer;
+}
+
+
+.calendarDate:hover {
+  background: rgba(57, 87, 255, 0.08);
+}
+
+
+.outsideDate {
+  color: #c5c5c5;
+}
+
+
+.holidayDate {
+  color: #ef3d3d;
+}
+
+
+.selectedDate {
+  background: #2196e8;
+
+  color: #ffffff;
+}
+
+
+.selectedDate:hover {
+  background: #2196e8;
 }
 
 
@@ -769,6 +1199,11 @@
   background: #1b2038;
 
   cursor: pointer;
+}
+
+
+.cycleSelect:disabled {
+  cursor: default;
 }
 
 
@@ -835,7 +1270,8 @@
   background: #ffffff;
 
   box-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.15);
+    0 2px 4px
+    rgba(0, 0, 0, 0.15);
 
   overflow: hidden;
 
@@ -872,8 +1308,15 @@
 }
 
 
-.cycleOption:hover {
+.cycleOption:hover:not(:disabled) {
   background: rgba(57, 87, 255, 0.08);
+}
+
+
+.cycleOption:disabled {
+  color: rgba(21, 25, 47, 0.45);
+
+  cursor: default;
 }
 
 
@@ -1096,6 +1539,29 @@
 }
 
 
+.fileNameButton {
+  padding: 0;
+
+  border: none;
+
+  background: transparent;
+
+  color: #ffffff;
+
+  font-family: Pretendard, sans-serif;
+
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 110%;
+
+  text-align: left;
+
+  white-space: nowrap;
+
+  cursor: pointer;
+}
+
+
 .fileRight {
   display: flex;
   align-items: center;
@@ -1215,8 +1681,6 @@
   cursor: pointer;
 }
 
-
-/* 편집 페이지 저장 버튼 */
 
 .saveButton {
   width: 41px;

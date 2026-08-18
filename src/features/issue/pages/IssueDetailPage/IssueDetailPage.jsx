@@ -1,6 +1,22 @@
-import { useNavigate, useParams } from "react-router-dom";
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  useNavigate,
+  useParams,
+} from "react-router-dom";
+
 import MainLayout from "../../../../components/MainLayout/MainLayout";
 import styles from "./IssueDetailPage.module.css";
+
+import {
+  getIssue,
+  deleteIssue,
+  updateChecklistItem,
+  downloadIssueFile,
+} from "../../../../api/issueApi";
 
 import checkboxIcon from "../../../../assets/icons/checkboxIcon.svg";
 import checkboxCheckedIcon from "../../../../assets/icons/checkboxCheckedIcon.svg";
@@ -9,94 +25,494 @@ import closeIcon from "../../../../assets/icons/closeIcon.svg";
 import editPencilIcon from "../../../../assets/icons/editPencilIcon.svg";
 
 
-const CONDITIONS = [
-  {
-    id: 1,
-    text: "결제 API 요구사항 확정",
-    checked: true,
-  },
-  {
-    id: 2,
-    text: "결제 API 요구사항 확정",
-    checked: true,
-  },
-  {
-    id: 3,
-    text: "결제 API 요구사항 확정",
-    checked: false,
-  },
-  {
-    id: 4,
-    text: "결제 API 요구사항 확정",
-    checked: false,
-  },
-];
-
-
-const FILES = [
-  {
-    id: 1,
-    name: "Global_Launch_Copy_x4.xlsx",
-    size: "23.4 KB",
-  },
-  {
-    id: 2,
-    name: "Global_Launch_Copy_x4.xlsx",
-    size: "23.4 KB",
-  },
-  {
-    id: 3,
-    name: "Global_Launch_Copy_x4.xlsx",
-    size: "23.4 KB",
-  },
-  {
-    id: 4,
-    name: "Global_Launch_Copy_x4.xlsx",
-    size: "23.4 KB",
-  },
-];
+const PRIORITY_TEXT = {
+  LOW: "낮음",
+  NORMAL: "보통",
+  HIGH: "높음",
+  URGENT: "긴급",
+};
 
 
 function IssueDetailPage() {
   const navigate = useNavigate();
   const { issueId } = useParams();
 
+  const [
+    issue,
+    setIssue,
+  ] = useState(null);
+
+  const [
+    conditions,
+    setConditions,
+  ] = useState([]);
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+  const [
+    isDeleting,
+    setIsDeleting,
+  ] = useState(false);
+
+
+  /* =========================
+      이슈 상세 조회
+  ========================= */
+
+  useEffect(() => {
+    const fetchIssue = async () => {
+      try {
+        setLoading(true);
+
+        const response =
+          await getIssue(issueId);
+
+        console.log(
+          "이슈 상세 조회 성공:",
+          response
+        );
+
+        const issueData =
+          response.data;
+
+        setIssue(issueData);
+
+        setConditions(
+          (
+            issueData.checklist ||
+            []
+          ).map(
+            (condition) => ({
+              id:
+                condition.itemId,
+              text:
+                condition.content,
+              checked:
+                condition.isDone,
+            })
+          )
+        );
+      } catch (error) {
+        console.error(
+          "이슈 상세 조회 실패:",
+          error
+        );
+
+        console.error(
+          "서버 응답:",
+          error.response?.data
+        );
+
+        setIssue(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (issueId) {
+      fetchIssue();
+    }
+  }, [issueId]);
+
+
+  /* =========================
+      수정
+  ========================= */
 
   const handleEdit = () => {
-    navigate(`/issue/${issueId}/edit`);
+    navigate(
+      `/issue/${issueId}/edit`
+    );
   };
 
 
-  const handleDelete = () => {
-    navigate("/issue");
+  /* =========================
+      삭제
+  ========================= */
+
+  const handleDelete = async () => {
+    if (isDeleting) {
+      return;
+    }
+
+    const confirmed =
+      window.confirm(
+        "이 이슈를 삭제하시겠습니까?"
+      );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+
+      const response =
+        await deleteIssue(issueId);
+
+      console.log(
+        "이슈 삭제 성공:",
+        response
+      );
+
+      navigate("/issue");
+    } catch (error) {
+      console.error(
+        "이슈 삭제 실패:",
+        error
+      );
+
+      console.error(
+        "서버 응답:",
+        error.response?.data
+      );
+
+      const responseData =
+        error.response?.data;
+
+      if (
+        responseData?.code ===
+        "404ISSUE"
+      ) {
+        alert(
+          "존재하지 않는 이슈입니다."
+        );
+
+        navigate("/issue");
+
+        return;
+      }
+
+      alert(
+        responseData?.message ||
+          "이슈 삭제에 실패했습니다."
+      );
+    } finally {
+      setIsDeleting(false);
+    }
   };
+
+
+  /* =========================
+      완료 조건 체크 변경
+  ========================= */
+
+  const handleToggleCondition =
+    async (conditionId) => {
+      const targetCondition =
+        conditions.find(
+          (condition) =>
+            condition.id ===
+            conditionId
+        );
+
+      if (!targetCondition) {
+        return;
+      }
+
+      const nextChecked =
+        !targetCondition.checked;
+
+      try {
+        const response =
+          await updateChecklistItem(
+            issueId,
+            conditionId,
+            nextChecked
+          );
+
+        console.log(
+          "완료 조건 체크 변경 성공:",
+          response
+        );
+
+        setConditions(
+          (prev) =>
+            prev.map(
+              (condition) =>
+                condition.id ===
+                conditionId
+                  ? {
+                      ...condition,
+                      checked:
+                        nextChecked,
+                    }
+                  : condition
+            )
+        );
+      } catch (error) {
+        console.error(
+          "완료 조건 체크 변경 실패:",
+          error
+        );
+
+        console.error(
+          "서버 응답:",
+          error.response?.data
+        );
+      }
+    };
+
+
+  /* =========================
+      첨부파일 다운로드
+  ========================= */
+
+  const handleDownloadFile =
+    async (file) => {
+      if (!file.fileUrl) {
+        console.warn(
+          "다운로드할 파일 URL이 없습니다."
+        );
+
+        return;
+      }
+
+      try {
+        const url =
+          new URL(
+            file.fileUrl
+          );
+
+        const storedKey =
+          decodeURIComponent(
+            url.pathname
+              .split("/")
+              .pop()
+          );
+
+        const response =
+          await downloadIssueFile(
+            storedKey
+          );
+
+        const blobUrl =
+          window.URL.createObjectURL(
+            response.data
+          );
+
+        const link =
+          document.createElement(
+            "a"
+          );
+
+        link.href =
+          blobUrl;
+
+        link.download =
+          file.fileName;
+
+        document.body.appendChild(
+          link
+        );
+
+        link.click();
+
+        link.remove();
+
+        window.URL.revokeObjectURL(
+          blobUrl
+        );
+
+        console.log(
+          "첨부파일 다운로드 성공:",
+          file.fileName
+        );
+      } catch (error) {
+        console.error(
+          "첨부파일 다운로드 실패:",
+          error
+        );
+
+        console.error(
+          "서버 응답:",
+          error.response?.data
+        );
+      }
+    };
+
+
+  /* =========================
+      완료 조건 개수
+  ========================= */
+
+  const checkedCount =
+    conditions.filter(
+      (condition) =>
+        condition.checked
+    ).length;
+
+
+  /* =========================
+      날짜 표시
+  ========================= */
+
+  const formatDate = (
+    date
+  ) => {
+    if (!date) {
+      return "-";
+    }
+
+    const [
+      year,
+      month,
+      day,
+    ] = date.split("-");
+
+    return `${day} / ${month} / ${year}`;
+  };
+
+
+  /* =========================
+      파일 크기
+  ========================= */
+
+  const formatFileSize = (
+    size
+  ) => {
+    if (
+      size === null ||
+      size === undefined
+    ) {
+      return "-";
+    }
+
+    if (size < 1024) {
+      return `${size} B`;
+    }
+
+    if (
+      size <
+      1024 * 1024
+    ) {
+      return `${(
+        size / 1024
+      ).toFixed(1)} KB`;
+    }
+
+    return `${(
+      size /
+      (1024 * 1024)
+    ).toFixed(1)} MB`;
+  };
+
+
+  /* =========================
+      로딩
+  ========================= */
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <main
+          className={
+            styles.page
+          }
+        >
+          <p>
+            이슈 정보를
+            불러오는 중입니다.
+          </p>
+        </main>
+      </MainLayout>
+    );
+  }
+
+
+  /* =========================
+      조회 실패
+  ========================= */
+
+  if (!issue) {
+    return (
+      <MainLayout>
+        <main
+          className={
+            styles.page
+          }
+        >
+          <p>
+            이슈 정보를
+            불러오지 못했습니다.
+          </p>
+        </main>
+      </MainLayout>
+    );
+  }
 
 
   return (
     <MainLayout>
-      <main className={styles.page}>
+      <main
+        className={
+          styles.page
+        }
+      >
         {/* =========================
             상단
         ========================= */}
 
-        <section className={styles.header}>
-          <span className={styles.issueLabel}>
+        <section
+          className={
+            styles.header
+          }
+        >
+          <span
+            className={
+              styles.issueLabel
+            }
+          >
             이슈
           </span>
 
-          <h1 className={styles.title}>
-            앱 출시 전 프로모션 랜딩페이지 최종 연동 및 콘텐츠 검수
+          <h1
+            className={
+              styles.title
+            }
+          >
+            {issue.title}
           </h1>
 
-          <div className={styles.metaRow}>
-            <span className={styles.cycleBadge}>
-              Cycle 3
+          <div
+            className={
+              styles.metaRow
+            }
+          >
+            <span
+              className={
+                styles.cycleBadge
+              }
+            >
+              {
+                issue.cycleName
+              }
             </span>
 
-            <span className={styles.priority}>
+            <span
+              className={
+                styles.priority
+              }
+            >
               우선순위 ·{" "}
-              <span className={styles.urgent}>
-                긴급
+
+              <span
+                className={
+                  issue.priority ===
+                  "URGENT"
+                    ? styles.urgent
+                    : ""
+                }
+              >
+                {
+                  PRIORITY_TEXT[
+                    issue.priority
+                  ] ||
+                  issue.priority
+                }
               </span>
             </span>
           </div>
@@ -107,35 +523,99 @@ function IssueDetailPage() {
             담당자 / 처리 일자
         ========================= */}
 
-        <section className={styles.infoRow}>
-          <div className={styles.managerArea}>
-            <span className={styles.infoLabel}>
+        <section
+          className={
+            styles.infoRow
+          }
+        >
+          <div
+            className={
+              styles.managerArea
+            }
+          >
+            <span
+              className={
+                styles.infoLabel
+              }
+            >
               담당자
             </span>
 
-            <div className={styles.managerContent}>
-              <div className={styles.avatar} />
+            <div
+              className={
+                styles.managerContent
+              }
+            >
+              <div
+                className={
+                  styles.avatar
+                }
+              />
 
-              <div className={styles.managerText}>
+              <div
+                className={
+                  styles.managerText
+                }
+              >
                 <strong>
-                  김서연
+                  {
+                    issue.assignee
+                      ?.name ||
+                    "-"
+                  }
                 </strong>
 
                 <span>
-                  기업 A · Design · Product Designer
+                  {
+                    issue.assignee
+                      ?.company ||
+                    "-"
+                  }
+
+                  {" · "}
+
+                  {
+                    issue.assignee
+                      ?.team ||
+                    "-"
+                  }
+
+                  {" · "}
+
+                  {
+                    issue.assignee
+                      ?.position ||
+                    "-"
+                  }
                 </span>
               </div>
             </div>
           </div>
 
 
-          <div className={styles.dateArea}>
-            <span className={styles.infoLabel}>
+          <div
+            className={
+              styles.dateArea
+            }
+          >
+            <span
+              className={
+                styles.infoLabel
+              }
+            >
               처리 일자
             </span>
 
-            <span className={styles.dateText}>
-              06 / 08 / 2026
+            <span
+              className={
+                styles.dateText
+              }
+            >
+              {
+                formatDate(
+                  issue.dueDate
+                )
+              }
             </span>
           </div>
         </section>
@@ -145,40 +625,28 @@ function IssueDetailPage() {
             내용
         ========================= */}
 
-        <section className={styles.contentSection}>
-          <span className={styles.sectionLabel}>
+        <section
+          className={
+            styles.contentSection
+          }
+        >
+          <span
+            className={
+              styles.sectionLabel
+            }
+          >
             내용
           </span>
 
-          <div className={styles.contentBox}>
+          <div
+            className={
+              styles.contentBox
+            }
+          >
             <p>
-              글로벌 커머스 앱 리뉴얼 출시와 함께 공개될 프로모션
-              랜딩페이지의 최종 연동 및 콘텐츠 검수가 필요합니다.
-            </p>
-
-            <p>
-              현재 디자인팀에서 랜딩페이지 최종 시안을 전달했으며,
-              프론트엔드 구현도 대부분 완료된 상태입니다.
-              <br />
-              다만 마케팅팀에서 전달한 국가별 캠페인 카피와 실제
-              구현된 문구 일부가 일치하지 않고,
-              <br />
-              CTA 버튼 클릭 시 앱 설치 페이지로 연결되는 딥링크도
-              일부 환경에서 정상적으로 동작하지 않는 문제가
-              확인되었습니다.
-            </p>
-
-            <p>
-              출시 일정에 맞추기 위해 한국·영국 버전의 캠페인
-              문구를 최종 확정하고, 랜딩페이지에 반영된 텍스트 및
-              이미지 에셋을 검수해야 합니다. 또한 모바일 환경에서
-              CTA 버튼과 앱스토어 연결이 정상적으로 작동하는지
-              개발팀과 함께 확인해주세요.
-            </p>
-
-            <p>
-              수정 사항이 모두 반영되면 마케팅팀의 최종 승인을
-              받은 뒤 프로덕션 환경에 배포합니다.
+              {
+                issue.description
+              }
             </p>
           </div>
         </section>
@@ -188,38 +656,90 @@ function IssueDetailPage() {
             완료 조건
         ========================= */}
 
-        <section className={styles.conditionSection}>
-          <div className={styles.sectionTitleRow}>
-            <span className={styles.sectionLabel}>
+        <section
+          className={
+            styles.conditionSection
+          }
+        >
+          <div
+            className={
+              styles.sectionTitleRow
+            }
+          >
+            <span
+              className={
+                styles.sectionLabel
+              }
+            >
               완료 조건
             </span>
 
-            <span className={styles.countBadge}>
-              2/4
+            <span
+              className={
+                styles.countBadge
+              }
+            >
+              {checkedCount}/
+              {
+                conditions.length
+              }
             </span>
           </div>
 
-          <div className={styles.conditionList}>
-            {CONDITIONS.map((condition) => (
-              <div
-                key={condition.id}
-                className={styles.conditionItem}
-              >
-                <img
-                  src={
-                    condition.checked
-                      ? checkboxCheckedIcon
-                      : checkboxIcon
+          <div
+            className={
+              styles.conditionList
+            }
+          >
+            {conditions.map(
+              (
+                condition
+              ) => (
+                <div
+                  key={
+                    condition.id
                   }
-                  alt=""
-                  className={styles.checkbox}
-                />
+                  className={
+                    styles.conditionItem
+                  }
+                >
+                  <button
+                    type="button"
+                    className={
+                      styles.checkboxButton
+                    }
+                    aria-label={
+                      condition.checked
+                        ? "완료 조건 체크 해제"
+                        : "완료 조건 체크"
+                    }
+                    onClick={() =>
+                      handleToggleCondition(
+                        condition.id
+                      )
+                    }
+                  >
+                    <img
+                      src={
+                        condition.checked
+                          ? checkboxCheckedIcon
+                          : checkboxIcon
+                      }
+                      alt=""
+                      className={
+                        styles.checkbox
+                      }
+                    />
+                  </button>
 
-                <span>
-                  {condition.text}
-                </span>
-              </div>
-            ))}
+                  <span>
+                    {
+                      condition.text
+                    }
+                  </span>
+                </div>
+              )
+            )}
           </div>
         </section>
 
@@ -228,53 +748,125 @@ function IssueDetailPage() {
             첨부된 파일
         ========================= */}
 
-        <section className={styles.fileSection}>
-          <div className={styles.sectionTitleRow}>
-            <span className={styles.sectionLabel}>
+        <section
+          className={
+            styles.fileSection
+          }
+        >
+          <div
+            className={
+              styles.sectionTitleRow
+            }
+          >
+            <span
+              className={
+                styles.sectionLabel
+              }
+            >
               첨부된 파일
             </span>
 
-            <span className={styles.countBadge}>
-              4개
+            <span
+              className={
+                styles.countBadge
+              }
+            >
+              {
+                issue.attachments
+                  ?.length ||
+                0
+              }
+              개
             </span>
           </div>
 
-          <div className={styles.fileList}>
-            {FILES.map((file) => (
-              <div
-                key={file.id}
-                className={styles.fileItem}
-              >
-                <div className={styles.fileNameArea}>
-                  <img
-                    src={documentIcon2}
-                    alt=""
-                    className={styles.documentIcon}
-                  />
-
-                  <span className={styles.fileName}>
-                    {file.name}
-                  </span>
-                </div>
-
-                <div className={styles.fileRight}>
-                  <span className={styles.fileSize}>
-                    {file.size}
-                  </span>
-
-                  <button
-                    type="button"
-                    className={styles.fileRemoveButton}
-                    aria-label="첨부 파일 삭제"
+          <div
+            className={
+              styles.fileList
+            }
+          >
+            {(
+              issue.attachments ||
+              []
+            ).map(
+              (
+                file
+              ) => (
+                <div
+                  key={
+                    file.attachmentId
+                  }
+                  className={
+                    styles.fileItem
+                  }
+                >
+                  <div
+                    className={
+                      styles.fileNameArea
+                    }
                   >
                     <img
-                      src={closeIcon}
+                      src={
+                        documentIcon2
+                      }
                       alt=""
+                      className={
+                        styles.documentIcon
+                      }
                     />
-                  </button>
+
+                    <button
+                      type="button"
+                      className={
+                        styles.fileNameButton
+                      }
+                      onClick={() =>
+                        handleDownloadFile(
+                          file
+                        )
+                      }
+                    >
+                      {
+                        file.fileName
+                      }
+                    </button>
+                  </div>
+
+                  <div
+                    className={
+                      styles.fileRight
+                    }
+                  >
+                    <span
+                      className={
+                        styles.fileSize
+                      }
+                    >
+                      {
+                        formatFileSize(
+                          file.fileSize
+                        )
+                      }
+                    </span>
+
+                    <button
+                      type="button"
+                      className={
+                        styles.fileRemoveButton
+                      }
+                      aria-label="첨부 파일 삭제"
+                    >
+                      <img
+                        src={
+                          closeIcon
+                        }
+                        alt=""
+                      />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            )}
           </div>
         </section>
 
@@ -283,22 +875,41 @@ function IssueDetailPage() {
             하단 버튼
         ========================= */}
 
-        <div className={styles.actions}>
+        <div
+          className={
+            styles.actions
+          }
+        >
           <button
             type="button"
-            className={styles.deleteButton}
-            onClick={handleDelete}
+            className={
+              styles.deleteButton
+            }
+            onClick={
+              handleDelete
+            }
+            disabled={
+              isDeleting
+            }
           >
-            삭제
+            {isDeleting
+              ? "삭제 중..."
+              : "삭제"}
           </button>
 
           <button
             type="button"
-            className={styles.editButton}
-            onClick={handleEdit}
+            className={
+              styles.editButton
+            }
+            onClick={
+              handleEdit
+            }
           >
             <img
-              src={editPencilIcon}
+              src={
+                editPencilIcon
+              }
               alt=""
             />
 

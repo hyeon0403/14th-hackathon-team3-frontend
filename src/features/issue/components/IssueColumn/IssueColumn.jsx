@@ -1,9 +1,13 @@
+import { useNavigate } from "react-router-dom";
+
 import IssueCard from "../IssueCard/IssueCard";
 
 import styles from "./IssueColumn.module.css";
 
 import moreIcon from "../../../../assets/icons/moreIcon.svg";
 import addIcon from "../../../../assets/icons/addIcon.svg";
+
+import { ROUTES } from "../../../../router/routes.constant";
 
 
 function IssueColumn({
@@ -12,6 +16,14 @@ function IssueColumn({
   count,
   issues,
 }) {
+  const navigate = useNavigate();
+
+
+  const handleCreateIssue = () => {
+    navigate(ROUTES.CREATE_ISSUE);
+  };
+
+
   return (
     <section className={styles.column}>
       {/* =========================
@@ -48,6 +60,7 @@ function IssueColumn({
           <button
             type="button"
             aria-label="이슈 추가"
+            onClick={handleCreateIssue}
           >
             <img
               src={addIcon}
